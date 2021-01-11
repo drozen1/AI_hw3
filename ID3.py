@@ -62,7 +62,6 @@ def TDIDT_CUT(E, F, Default, SelectFeature, M):
 # M= list of paremeters
 def K_fold(E, F, c, SelectFeature, M):
     kf = KFold(5, True, 123456789)  # TODO: change to my ID
-    max_accuracy = 0
     accuarcy_M_list = []
     for Mparmeter in M:
         sum_accuracy = 0
@@ -73,8 +72,7 @@ def K_fold(E, F, c, SelectFeature, M):
                 trainE.append(E[i])
             for j in test_index:  # relevant E for test
                 testE.append(E[j])
-            copyF = deepcopy(F)
-            tree = TDIDT_CUT(trainE, copyF, c, SelectFeature, Mparmeter)
+            tree = TDIDT_CUT(trainE, F, c, SelectFeature, Mparmeter)
             cut_classifier = IDT_basic_classifier(trainE, testE, None, tree)
             curr_accuracy = cut_classifier.predict_cut_IDT()
             sum_accuracy += curr_accuracy
@@ -256,12 +254,14 @@ if __name__ == '__main__':
 
     c = majority_class(train_tables)
     F = create_Features(len(train_tables[0]))
-    # basic_classifier = IDT_basic_classifier(train_tables, test_tables,TDIDT)
-    # basic_classifier.predict_IDT()
-    tree = TDIDT_CUT(train_tables, F, c, select_feature,400)
-    x= K_fold(train_tables, F, c, select_feature, [1, 2, 3, 5, 8, 16, 30, 50, 80, 120])
+    basic_classifier = IDT_basic_classifier(train_tables, test_tables,TDIDT)
+    basic_classifier.predict_IDT()
 
+
+    x= K_fold(train_tables, F, c, select_feature, [ 120])
     print(x)
+
+
     # experiment(train_tables, F, c, select_feature, [2,40,50])
     # basic_classifier = IDT_basic_classifier(train_tables, test_tables, TDIDT)
     # basic_classifier.predict()
