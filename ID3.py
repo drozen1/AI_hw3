@@ -1,95 +1,168 @@
 import csv
 from math import log as logbase
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+
+class TreeNode:
+    def __init__(self, feature, diverge_val, children, c):
+        self.feature = feature
+        self.diverge_val = diverge_val
+        self.children = children
+        self.c = c
+
+
+
+def TDIDT(E, F, Default, SelectFeature):
+    if len(E) == 0:
+        return TreeNode(None, None, None, Default)
+    c = majority_class(E)
+    if (is_consistent(E)):  # Consistent Node
+        return TreeNode(None, None, None, c)
+    f, diverge_val = SelectFeature(E, F)  # f is a number of the next feature
+    #F.remove(f) - not needed
+    Echild1 = []
+    Echild2 = []
+    for example in E:
+        if (example[f] >= diverge_val):
+            Echild1.append(example)
+        else:
+            Echild2.append(example)
+    subtrees = []
+    subtrees.append(TDIDT(Echild1, F, c, SelectFeature))
+    subtrees.append(TDIDT(Echild2, F, c, SelectFeature))
+    return TreeNode(f,diverge_val,subtrees,c)
 
 
 def load_tables(name_of_file):
     with open(name_of_file, newline='') as csvfile:
         tables = list(csv.reader(csvfile))
-    features=tables[0] ##if I need
+    features = tables[0]  ##if I need
     tables.remove(tables[0])
+    max_len=len(tables[0])
     for i in range(len(tables)):
-        for j in range(1,len(tables[0])):
-            if j==len(tables[0])-1:
+        for j in range(1, max_len):
+            if j == max_len - 1:
                 tables[i].remove(tables[i][j])
             else:
                 tables[i][j] = float(tables[i][j])
 
     return tables
 
-def select_feature(examples):
-    best_feture=0
-    max_IG=0
-    best_diverge_val=0
-    for num_of_feature in range(1,len(examples[0])-1):
+
+def select_feature(examples, F):
+    best_feture = 0
+    max_IG = 0
+    best_diverge_val = 0
+    for num_of_feature in F:  # range(1, len(examples[0]) - 1):
         sorted_feature_list = []
         for example in examples:
-            sorted_feature_list.append([example[num_of_feature],example[0]])
+            sorted_feature_list.append([example[num_of_feature], example[0]])
         sorted_feature_list.sort()
-        #now we have sorted list
-        max_IG_per_feature=0
+        # now we have sorted list
+        max_IG_per_feature = 0
         best_diverge_val_per_feature = 0
-        for i in range(0,len(sorted_feature_list)-1):
-            diverge_val=(sorted_feature_list[i][0]+sorted_feature_list[i+1][0])/2
-            curr_IG=calc_IG(sorted_feature_list,diverge_val)
-            if curr_IG>=max_IG_per_feature:
-                max_IG_per_feature=curr_IG
-                best_diverge_val_per_feature=diverge_val
-        if max_IG_per_feature>=max_IG:
-            max_IG=max_IG_per_feature
-            best_diverge_val=best_diverge_val_per_feature
-            best_feture=num_of_feature
-    return best_feture,best_diverge_val
+        for i in range(0, len(sorted_feature_list)-1):
+            diverge_val = (sorted_feature_list[i][0] + sorted_feature_list[i + 1][0]) / 2
+            curr_IG = calc_IG(sorted_feature_list, diverge_val)
+            if curr_IG >= max_IG_per_feature:
+                max_IG_per_feature = curr_IG
+                best_diverge_val_per_feature = diverge_val
+        if max_IG_per_feature >= max_IG:
+            max_IG = max_IG_per_feature
+            best_diverge_val = best_diverge_val_per_feature
+            best_feture = num_of_feature
+    return best_feture, best_diverge_val
+
 
 def calc_IG(sorted_examples, diverge_val):
-    group1=[]
-    group2=[]
+    group1 = []
+    group2 = []
     for example in sorted_examples:
-        if example[0]>diverge_val:
+        if example[0] > diverge_val:
             group1.append(example)
         else:
             group2.append(example)
-    orig_entropy=entropy(sorted_examples)
-    if(len(group1)!=0):
-        entropy1=(len(group1)*entropy(group1)/len(sorted_examples))
+    orig_entropy = entropy(sorted_examples)
+    if (len(group1) != 0):
+        entropy1 = (len(group1) * entropy(group1) / len(sorted_examples))
     else:
-        entropy1=0
+        entropy1 = 0
     if (len(group2) != 0):
-        entropy2=(len(group2)*entropy(group2)/len(sorted_examples))
+        entropy2 = (len(group2) * entropy(group2) / len(sorted_examples))
     else:
-        entropy2=0
-    return orig_entropy-(entropy1+entropy2)
+        entropy2 = 0
+    return orig_entropy - (entropy1 + entropy2)
+
 
 def log(num):
     if num == 0:
         return 0
     else:
-        return logbase(num,2)
+        return logbase(num, 2)
 
 
 def entropy(examples):
-    red=0
-    blue=0
+    red = 0
+    blue = 0
     for example in examples:
-        if(example[1]=='B'):
-            blue+=1
+        if (example[1] == 'B'):
+            blue += 1
         else:
-            red+=1
-    total=len(examples)
-    if(total==0):
-        print("Error in calc entropy" )
+            red += 1
+    total = len(examples)
+    if (total == 0):
+        print("Error in calc entropy")
         return 1
-    p_blue=blue/total
+    p_blue = blue / total
     p_red = red / total
-    val= -(p_blue)*log(p_blue)-((p_red)*log(p_red))
+    val = -(p_blue) * log(p_blue) - ((p_red) * log(p_red))
     return val
+
+
+def majority_class(examples):
+    red = 0
+    blue = 0
+    for example in examples:
+        if (example[0] == 'B'):
+            blue += 1
+        else:
+            red += 1
+    if red > blue:
+        return 'R'
+    else:
+        return 'B'
+
+
+def is_consistent(examples):
+    red = 0
+    blue = 0
+    for example in examples:
+        if (example[0] == 'B'):
+            blue += 1
+        else:
+            red += 1
+    if red == 0 or blue == 0:
+        return True
+    else:
+        return False
+
+def create_Features(x):
+    F=[]
+    for i in range(1, x):
+        F.append(i)
+    return F
+
+class IDT_basic_classifier:
+    def __init__(self,train_tables,test_tables):
+        train_tables=train_tables
+        test_tables=test_tables
+    def classify(self):
+        return 1
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    train_tables = load_tables("train.csv")
+    c=majority_class(train_tables)
+    F=create_Features(len(train_tables[0]))
 
-    train_tables=load_tables("train.csv")
-    select_feature(train_tables)
-    test_tables=load_tables("test.csv")
-
+    t=TDIDT(train_tables,F,c,select_feature)
+    test_tables = load_tables("test.csv")
