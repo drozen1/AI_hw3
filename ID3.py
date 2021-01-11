@@ -1,5 +1,10 @@
 import csv
+import numpy as np
+from sklearn.model_selection import KFold
 from math import log as logbase
+from copy import deepcopy
+from warnings import simplefilter
+simplefilter(action='ignore', category=FutureWarning)
 
 
 class TreeNode:
@@ -30,6 +35,53 @@ def TDIDT(E, F, Default, SelectFeature):
     subtrees.append(TDIDT(Echild2, F, c, SelectFeature))
     return TreeNode(f, diverge_val, subtrees, c)
 
+    # early cut!
+
+
+def TDIDT_CUT(E, F, Default, SelectFeature, M):
+    if len(E) == 0:
+        return TreeNode(None, None, None, Default)
+    c = majority_class(E)
+    if (is_consistent(E) or len(E) < M):  # Consistent Node
+        return TreeNode(None, None, None, c)
+    f, diverge_val = SelectFeature(E, F)  # f is a number of the next feature
+    # F.remove(f) - not needed
+    Echild1 = []
+    Echild2 = []
+    for example in E:
+        if (example[f] >= diverge_val):
+            Echild1.append(example)
+        else:
+            Echild2.append(example)
+    subtrees = []
+    subtrees.append(TDIDT_CUT(Echild1, F, c, SelectFeature, M))
+    subtrees.append(TDIDT_CUT(Echild2, F, c, SelectFeature, M))
+    return TreeNode(f, diverge_val, subtrees, c)
+
+
+# M= list of paremeters
+def K_fold(E, F, c, SelectFeature, M):
+    kf = KFold(5, True, 123456789)  # TODO: change to my ID
+    max_accuracy = 0
+    accuarcy_M_list = []
+    for Mparmeter in M:
+        sum_accuracy = 0
+        for train_index, test_index in kf.split(E):  # loop 5 times
+            trainE = []
+            testE = []
+            for i in train_index:  # relevant E for train
+                trainE.append(E[i])
+            for j in test_index:  # relevant E for test
+                testE.append(E[j])
+            copyF = deepcopy(F)
+            tree = TDIDT_CUT(trainE, copyF, c, SelectFeature, Mparmeter)
+            cut_classifier = IDT_basic_classifier(trainE, testE, None, tree)
+            curr_accuracy = cut_classifier.predict_cut_IDT()
+            sum_accuracy += curr_accuracy
+        total_accuracy = sum_accuracy / 5
+        accuarcy_M_list.append([Mparmeter, total_accuracy])
+    return accuarcy_M_list
+
 
 def load_tables(name_of_file):
     with open(name_of_file, newline='') as csvfile:
@@ -39,10 +91,8 @@ def load_tables(name_of_file):
     max_len = len(tables[0])
     for i in range(len(tables)):
         for j in range(1, max_len):
-            if j == max_len - 1:
-                tables[i].remove(tables[i][j])
-            else:
-                tables[i][j] = float(tables[i][j])
+            tables[i][j] = float(tables[i][j])
+
 
     return tables
 
@@ -153,9 +203,11 @@ def create_Features(x):
 
 
 class IDT_basic_classifier:
-    def __init__(self, train_tables, test_tables):
+    def __init__(self, train_tables, test_tables, TDIDT, tree=None):
         self.train_tables = train_tables
         self.test_tables = test_tables
+        self.TDIDT = TDIDT
+        self.tree = tree
 
     # get a DT and E and decide if it's R or B
     def classify(self, tree, example):
@@ -168,13 +220,13 @@ class IDT_basic_classifier:
         else:
             return self.classify(tree.children[1], example)
 
-    def predict(self):
+    def predict_IDT(self):
         c = majority_class(self.train_tables)
         F = create_Features(len(self.train_tables[0]))
-        tree = TDIDT(self.train_tables, F, c, select_feature)
+        tree = self.TDIDT(self.train_tables, F, c, select_feature)
         sum = len(self.test_tables)
         counter = 0
-        i=0
+        i = 0
         for test in self.test_tables:
             result = self.classify(tree, test)
             if (result == test[0]):
@@ -182,10 +234,34 @@ class IDT_basic_classifier:
         success_rate = (counter / sum)
         print(success_rate)
 
+    def predict_cut_IDT(self):
+        # c = majority_class(self.train_tables)
+        # F = create_Features(len(self.train_tables[0]))
+        # tree = self.TDIDT(self.train_tables, F, c, select_feature,self.M)  #cut tdidt
+        sum = len(self.test_tables)
+        counter = 0
+        i = 0
+        for test in self.test_tables:
+            result = self.classify(self.tree, test)
+            if (result == test[0]):
+                counter += 1
+        success_rate = (counter / sum)
+        return success_rate
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     train_tables = load_tables("train.csv")
     test_tables = load_tables("test.csv")
-    basic_classifier = IDT_basic_classifier(train_tables, test_tables)
-    basic_classifier.predict()
+
+    c = majority_class(train_tables)
+    F = create_Features(len(train_tables[0]))
+    # basic_classifier = IDT_basic_classifier(train_tables, test_tables,TDIDT)
+    # basic_classifier.predict_IDT()
+    tree = TDIDT_CUT(train_tables, F, c, select_feature,400)
+    x= K_fold(train_tables, F, c, select_feature, [1, 2, 3, 5, 8, 16, 30, 50, 80, 120])
+
+    print(x)
+    # experiment(train_tables, F, c, select_feature, [2,40,50])
+    # basic_classifier = IDT_basic_classifier(train_tables, test_tables, TDIDT)
+    # basic_classifier.predict()
