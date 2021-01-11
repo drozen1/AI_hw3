@@ -10,7 +10,6 @@ class TreeNode:
         self.c = c
 
 
-
 def TDIDT(E, F, Default, SelectFeature):
     if len(E) == 0:
         return TreeNode(None, None, None, Default)
@@ -18,7 +17,7 @@ def TDIDT(E, F, Default, SelectFeature):
     if (is_consistent(E)):  # Consistent Node
         return TreeNode(None, None, None, c)
     f, diverge_val = SelectFeature(E, F)  # f is a number of the next feature
-    #F.remove(f) - not needed
+    # F.remove(f) - not needed
     Echild1 = []
     Echild2 = []
     for example in E:
@@ -29,7 +28,7 @@ def TDIDT(E, F, Default, SelectFeature):
     subtrees = []
     subtrees.append(TDIDT(Echild1, F, c, SelectFeature))
     subtrees.append(TDIDT(Echild2, F, c, SelectFeature))
-    return TreeNode(f,diverge_val,subtrees,c)
+    return TreeNode(f, diverge_val, subtrees, c)
 
 
 def load_tables(name_of_file):
@@ -37,7 +36,7 @@ def load_tables(name_of_file):
         tables = list(csv.reader(csvfile))
     features = tables[0]  ##if I need
     tables.remove(tables[0])
-    max_len=len(tables[0])
+    max_len = len(tables[0])
     for i in range(len(tables)):
         for j in range(1, max_len):
             if j == max_len - 1:
@@ -60,7 +59,7 @@ def select_feature(examples, F):
         # now we have sorted list
         max_IG_per_feature = 0
         best_diverge_val_per_feature = 0
-        for i in range(0, len(sorted_feature_list)-1):
+        for i in range(0, len(sorted_feature_list) - 1):
             diverge_val = (sorted_feature_list[i][0] + sorted_feature_list[i + 1][0]) / 2
             curr_IG = calc_IG(sorted_feature_list, diverge_val)
             if curr_IG >= max_IG_per_feature:
@@ -127,7 +126,7 @@ def majority_class(examples):
         else:
             red += 1
     if red > blue:
-        return 'R'
+        return 'M'
     else:
         return 'B'
 
@@ -145,24 +144,48 @@ def is_consistent(examples):
     else:
         return False
 
+
 def create_Features(x):
-    F=[]
+    F = []
     for i in range(1, x):
         F.append(i)
     return F
 
+
 class IDT_basic_classifier:
-    def __init__(self,train_tables,test_tables):
-        train_tables=train_tables
-        test_tables=test_tables
-    def classify(self):
-        return 1
+    def __init__(self, train_tables, test_tables):
+        self.train_tables = train_tables
+        self.test_tables = test_tables
+
+    # get a DT and E and decide if it's R or B
+    def classify(self, tree, example):
+        if tree.children == None:
+            return tree.c
+        num_of_feature = tree.feature
+        diverge_val = tree.diverge_val
+        if (example[num_of_feature] >= diverge_val):
+            return self.classify(tree.children[0], example)
+        else:
+            return self.classify(tree.children[1], example)
+
+    def predict(self):
+        c = majority_class(self.train_tables)
+        F = create_Features(len(self.train_tables[0]))
+        tree = TDIDT(self.train_tables, F, c, select_feature)
+        sum = len(self.test_tables)
+        counter = 0
+        i=0
+        for test in self.test_tables:
+            result = self.classify(tree, test)
+            if (result == test[0]):
+                counter += 1
+        success_rate = (counter / sum)
+        print(success_rate)
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     train_tables = load_tables("train.csv")
-    c=majority_class(train_tables)
-    F=create_Features(len(train_tables[0]))
-
-    t=TDIDT(train_tables,F,c,select_feature)
     test_tables = load_tables("test.csv")
+    basic_classifier = IDT_basic_classifier(train_tables, test_tables)
+    basic_classifier.predict()
