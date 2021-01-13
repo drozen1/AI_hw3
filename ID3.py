@@ -39,11 +39,13 @@ def TDIDT(E, F, Default, SelectFeature):
 
 
 def TDIDT_CUT(E, F, Default, SelectFeature, M):
-    if len(E) == 0:
-        return TreeNode(None, None, None, Default)
+
     c = majority_class(E)
-    if (is_consistent(E) or len(E) < M):  # Consistent Node
+    if (len(E) < M):  # Consistent Node or cant decide by his own
+        return TreeNode(None, None, None, Default)  # TODO: change to Default?
+    if (is_consistent(E)):
         return TreeNode(None, None, None, c)
+
     f, diverge_val = SelectFeature(E, F)  # f is a number of the next feature
     # F.remove(f) - not needed
     Echild1 = []
@@ -80,7 +82,7 @@ def K_fold(E, F, c, SelectFeature, M):
         accuarcy_M_list.append([Mparmeter, total_accuracy])
     return accuarcy_M_list
 
-
+#TODO: change to fit 
 def load_tables(name_of_file):
     with open(name_of_file, newline='') as csvfile:
         tables = list(csv.reader(csvfile))
@@ -90,8 +92,6 @@ def load_tables(name_of_file):
     for i in range(len(tables)):
         for j in range(1, max_len):
             tables[i][j] = float(tables[i][j])
-
-
     return tables
 
 
@@ -110,7 +110,7 @@ def select_feature(examples, F):
         for i in range(0, len(sorted_feature_list) - 1):
             diverge_val = (sorted_feature_list[i][0] + sorted_feature_list[i + 1][0]) / 2
             curr_IG = calc_IG(sorted_feature_list, diverge_val)
-            if curr_IG >= max_IG_per_feature:
+            if curr_IG > max_IG_per_feature:
                 max_IG_per_feature = curr_IG
                 best_diverge_val_per_feature = diverge_val
         if max_IG_per_feature >= max_IG:
@@ -124,7 +124,7 @@ def calc_IG(sorted_examples, diverge_val):
     group1 = []
     group2 = []
     for example in sorted_examples:
-        if example[0] > diverge_val:
+        if example[0] >= diverge_val:
             group1.append(example)
         else:
             group2.append(example)
@@ -238,7 +238,6 @@ class IDT_basic_classifier:
         # tree = self.TDIDT(self.train_tables, F, c, select_feature,self.M)  #cut tdidt
         sum = len(self.test_tables)
         counter = 0
-        i = 0
         for test in self.test_tables:
             result = self.classify(self.tree, test)
             if (result == test[0]):
@@ -258,7 +257,7 @@ if __name__ == '__main__':
     basic_classifier.predict_IDT()
 
 
-    x= K_fold(train_tables, F, c, select_feature, [ 120])
+    x= K_fold(train_tables, F, c, select_feature, [1, 2, 3, 5, 8, 16, 30, 50, 80, 120])
     print(x)
 
 
