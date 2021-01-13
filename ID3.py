@@ -5,6 +5,7 @@ from math import log as logbase
 from copy import deepcopy
 from warnings import simplefilter
 simplefilter(action='ignore', category=FutureWarning)
+from matplotlib import pyplot as plot
 
 
 class TreeNode:
@@ -63,7 +64,7 @@ def TDIDT_CUT(E, F, Default, SelectFeature, M):
 
 # M= list of paremeters
 def K_fold(E, F, c, SelectFeature, M):
-    kf = KFold(5, True, 123456789)  # TODO: change to my ID
+    kf = KFold(5, True, 318965365)  # TODO: change to my ID
     accuarcy_M_list = []
     for Mparmeter in M:
         sum_accuracy = 0
@@ -79,7 +80,7 @@ def K_fold(E, F, c, SelectFeature, M):
             curr_accuracy = cut_classifier.predict_cut_IDT()
             sum_accuracy += curr_accuracy
         total_accuracy = sum_accuracy / 5
-        accuarcy_M_list.append([Mparmeter, total_accuracy])
+        accuarcy_M_list.append(total_accuracy)
     return accuarcy_M_list
 
 #TODO: change to fit 
@@ -157,7 +158,7 @@ def entropy(examples):
             red += 1
     total = len(examples)
     if (total == 0):
-        print("Error in calc entropy")
+        #print("Error in calc entropy")
         return 1
     p_blue = blue / total
     p_red = red / total
@@ -245,6 +246,15 @@ class IDT_basic_classifier:
         success_rate = (counter / sum)
         return success_rate
 
+def experiment(train_tables,c,F):
+    M=[ 3, 5, 8, 12, 20, 30, 40, 50,70,100]
+    y = K_fold(train_tables, F, c, select_feature, M)
+    #print(y)
+    plot.xlabel("M = min number of examples in a leaf")
+    plot.ylabel("success rate")
+    plot.scatter(M,y)
+    plot.show()
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -254,13 +264,15 @@ if __name__ == '__main__':
     c = majority_class(train_tables)
     F = create_Features(len(train_tables[0]))
     basic_classifier = IDT_basic_classifier(train_tables, test_tables,TDIDT)
-    basic_classifier.predict_IDT()
+    basic_classifier.predict_IDT() #this ine should print Ex.1.1
+    #
+    # #TODO:
+    """ remove only the next line to plot the graph Ex. 3.3.iii  """
+    # experiment(train_tables,c,F)
 
+    #Ex 3.4
+    # cut_tree=TDIDT_CUT(train_tables,F,c,select_feature,3) #M=1
+    # cut_classifier = IDT_basic_classifier(train_tables,test_tables, None, cut_tree)
+    # accuracy = cut_classifier.predict_cut_IDT()
+    # print(accuracy)  #result = 0.9469026548672567
 
-    x= K_fold(train_tables, F, c, select_feature, [1, 2, 3, 5, 8, 16, 30, 50, 80, 120])
-    print(x)
-
-
-    # experiment(train_tables, F, c, select_feature, [2,40,50])
-    # basic_classifier = IDT_basic_classifier(train_tables, test_tables, TDIDT)
-    # basic_classifier.predict()
