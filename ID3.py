@@ -4,6 +4,7 @@ from sklearn.model_selection import KFold
 from math import log as logbase
 from copy import deepcopy
 from warnings import simplefilter
+
 simplefilter(action='ignore', category=FutureWarning)
 from matplotlib import pyplot as plot
 
@@ -40,7 +41,6 @@ def TDIDT(E, F, Default, SelectFeature):
 
 
 def TDIDT_CUT(E, F, Default, SelectFeature, M):
-
     c = majority_class(E)
     if (len(E) < M):  # Consistent Node or cant decide by his own
         return TreeNode(None, None, None, Default)  # TODO: change to Default?
@@ -83,7 +83,8 @@ def K_fold(E, F, c, SelectFeature, M):
         accuarcy_M_list.append(total_accuracy)
     return accuarcy_M_list
 
-#TODO: change to fit 
+
+# TODO: change to fit
 def load_tables(name_of_file):
     with open(name_of_file, newline='') as csvfile:
         tables = list(csv.reader(csvfile))
@@ -158,7 +159,7 @@ def entropy(examples):
             red += 1
     total = len(examples)
     if (total == 0):
-        #print("Error in calc entropy")
+        # print("Error in calc entropy")
         return 1
     p_blue = blue / total
     p_red = red / total
@@ -219,10 +220,13 @@ class IDT_basic_classifier:
         else:
             return self.classify(tree.children[1], example)
 
-    def predict_IDT(self):
-        c = majority_class(self.train_tables)
-        F = create_Features(len(self.train_tables[0]))
-        tree = self.TDIDT(self.train_tables, F, c, select_feature)
+    def predict_IDT(self, calcTree=True):
+        if (calcTree):
+            c = majority_class(self.train_tables)
+            F = create_Features(len(self.train_tables[0]))
+            tree = self.TDIDT(self.train_tables, F, c, select_feature)
+        else:
+            tree=self.tree
         sum = len(self.test_tables)
         counter = 0
         i = 0
@@ -232,6 +236,28 @@ class IDT_basic_classifier:
                 counter += 1
         success_rate = (counter / sum)
         print(success_rate)
+
+    def predict_IDT_loss(self, calcTree=True):
+
+        if(calcTree):
+            c = majority_class(self.train_tables)
+            F = create_Features(len(self.train_tables[0]))
+            tree = self.TDIDT(self.train_tables, F, c, select_feature)
+        else:
+            tree=self.tree
+        sum = len(self.test_tables)
+        counterFN = 0
+        counterFP = 0
+        for test in self.test_tables:
+            result = self.classify(tree, test)
+            if (result != test[0]):
+                if (result == 'M'):
+                    counterFP += 1
+                if (result == 'B'):
+                    counterFN += 1
+        loss = (0.1 * counterFP + counterFN) / sum
+        #print(loss)
+        return loss
 
     def predict_cut_IDT(self):
         # c = majority_class(self.train_tables)
@@ -246,13 +272,14 @@ class IDT_basic_classifier:
         success_rate = (counter / sum)
         return success_rate
 
-def experiment(train_tables,c,F):
-    M=[ 3, 5, 8, 12, 20, 30, 40, 50,70,100]
+
+def experiment(train_tables, c, F):
+    M = [3, 5, 8, 12, 20, 30, 40, 50, 70, 100]
     y = K_fold(train_tables, F, c, select_feature, M)
-    #print(y)
+    # print(y)
     plot.xlabel("M = min number of examples in a leaf")
     plot.ylabel("success rate")
-    plot.scatter(M,y)
+    plot.scatter(M, y)
     plot.show()
 
 
@@ -263,16 +290,20 @@ if __name__ == '__main__':
 
     c = majority_class(train_tables)
     F = create_Features(len(train_tables[0]))
-    basic_classifier = IDT_basic_classifier(train_tables, test_tables,TDIDT)
-    basic_classifier.predict_IDT() #this ine should print Ex.1.1
-    #
-    # #TODO:
-    """ remove only the next line to plot the graph Ex. 3.3.iii  """
-    # experiment(train_tables,c,F)
+    basic_classifier = IDT_basic_classifier(train_tables, test_tables, TDIDT)
+    basic_classifier.predict_IDT()  # this ine should print Ex.1.1
 
-    #Ex 3.4
-    # cut_tree=TDIDT_CUT(train_tables,F,c,select_feature,3) #M=1
+    # Ex 4.1
+    # basic_classifier.predict_IDT_loss()
+
+    # #TODO:
+    """ remove only the next line to plot the graph Ex. 3.3.iii 
+     it takes 2 minutes 
+     """
+    #experiment(train_tables,c,F)
+
+    # Ex 3.4
+    # cut_tree=TDIDT_CUT(train_tables,F,c,select_feature,3) #M=1 learn from all train examples
     # cut_classifier = IDT_basic_classifier(train_tables,test_tables, None, cut_tree)
     # accuracy = cut_classifier.predict_cut_IDT()
     # print(accuracy)  #result = 0.9469026548672567
-
