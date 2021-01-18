@@ -70,7 +70,7 @@ def prune(T, V):
 
 
 def split_train_tabels(train_tabels,num=2):
-    kf = KFold(num, True, 123456789)  # TODO: change to my ID
+    kf = KFold(num, True, 318965365)  # TODO: change to my ID
     for train_index, test_index in kf.split(train_tabels):  # loop 5 times
         trainE = []
         testE = []
@@ -85,36 +85,37 @@ if __name__ == '__main__':
     train_tables = load_tables("train.csv")
     test_tables = load_tables("test.csv")
 
-    V_train, V_test = split_train_tabels(train_tables)
+    V_train, V_test = split_train_tabels(train_tables,4)
     c = majority_class(V_train)
     F = create_Features(len(V_train[0]))
-    T = TDIDT(V_train, F, c, select_feature)
+    T = TDIDT_CUT(V_train, F, c, select_feature,3)
 
     basic_classifier = IDT_basic_classifier(None, test_tables, None, T)
     x = basic_classifier.predict_IDT_loss(False)
     #print(x)
-
     best_tree = prune(T, V_test)
-
     basic_classifier1 = IDT_basic_classifier(None, test_tables, None, best_tree)
     loss = basic_classifier1.predict_IDT_loss(False)
     print(loss)
 
+
+
     """
-    ניסיון לכוונן ערכים:
+      ניסיון לכוונן ערכים:
     """
+
+
     # minloss=1
     # minloss_index=-1
     # min_lossM=-1
-    # V_train, V_test = split_train_tabels(train_tables)
-    # F = create_Features(len(V_train[0]))
-    # c = majority_class(V_train)
-    # for M in range (1,40):
-    #     cut_tree = TDIDT_CUT(V_train, F, c, select_feature, M)
+    # F = create_Features(len(train_tables[0]))
+    # for M in range (1,10):
     #     print(M, " mParemeter")
-    #     for i in range (2,40):
+    #     for i in range (2,5):
     #         print(i)
     #         V_train, V_test = split_train_tabels(train_tables, i)
+    #         c = majority_class(V_train)
+    #         cut_tree = TDIDT_CUT(V_train, F, c, select_feature, M)
     #         basic_classifier = IDT_basic_classifier(None, test_tables, None, cut_tree)
     #         x = basic_classifier.predict_IDT_loss(False)
     #         print(x)
@@ -128,6 +129,11 @@ if __name__ == '__main__':
     #             min_lossM=M
     #
     # print(minloss_index,minloss,min_lossM)
+
+
+
+
+
 
     #M=2 0.012389380530973451 k=2
     #M=12 0.001769911504424779 k=3

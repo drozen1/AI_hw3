@@ -274,9 +274,10 @@ class IDT_basic_classifier:
 
 
 def experiment(train_tables, c, F):
-    M = [3, 5, 8, 12, 20, 30, 40, 50, 70, 100]
+   # M = [3, 5, 8, 12, 20, 30, 40, 50, 70, 100]
+    M=[1, 2, 3, 5, 8, 16, 30, 50, 80, 120]
     y = K_fold(train_tables, F, c, select_feature, M)
-    # print(y)
+    #print(y)
     plot.xlabel("M = min number of examples in a leaf")
     plot.ylabel("success rate")
     plot.scatter(M, y)
@@ -294,16 +295,27 @@ if __name__ == '__main__':
     basic_classifier.predict_IDT()  # this ine should print Ex.1.1
 
     # Ex 4.1
-    # basic_classifier.predict_IDT_loss()
+    #print(basic_classifier.predict_IDT_loss())
 
     # #TODO:
     """ remove only the next line to plot the graph Ex. 3.3.iii 
-     it takes 2 minutes 
+     it takes 2 minutes in my computer
      """
     #experiment(train_tables,c,F)
 
-    # Ex 3.4
+    #Ex 3.4
     # cut_tree=TDIDT_CUT(train_tables,F,c,select_feature,3) #M=1 learn from all train examples
     # cut_classifier = IDT_basic_classifier(train_tables,test_tables, None, cut_tree)
     # accuracy = cut_classifier.predict_cut_IDT()
-    # print(accuracy)  #result = 0.9469026548672567
+    # print(accuracy)  #result = 0.9380530973451328
+    #
+    # cut_tree = TDIDT_CUT(train_tables, F, c, select_feature, 5)  # M=1 learn from all train examples
+    # cut_classifier = IDT_basic_classifier(train_tables, test_tables, None, cut_tree)
+    # accuracy = cut_classifier.predict_cut_IDT()
+    # print(accuracy)  # result = 0.9557522123893806
+    # M = [3, 5, 8, 12, 20, 30, 40, 50, 70, 100,150,200,300]
+    # for m in M:
+    #     cut_tree = TDIDT_CUT(train_tables, F, c, select_feature, m)  # M=1 learn from all train examples
+    #     cut_classifier = IDT_basic_classifier(None, test_tables, None, cut_tree)
+    #     accuracy = cut_classifier.predict_cut_IDT()
+    #     print(accuracy, m)
