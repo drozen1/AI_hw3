@@ -83,6 +83,22 @@ def split_train_tabels(train_tabels,num=2):
             testE.append(train_tabels[j])
         return trainE, testE
 
+
+
+def selectK_trees(example,forest, K):
+    selected_KNN_trees=[]
+    example.remove(example[0])
+    all_trees_and_distance=[]
+    for tree in forest.trees:
+        curr_dist=distance.euclidean(example,tree.centroid)
+        all_trees_and_distance.append([curr_dist,tree])
+    all_trees_and_distance.sort()
+    for i in range(0,K):
+        selected_KNN_trees.append( all_trees_and_distance[i][1].tree)
+    return selected_KNN_trees
+
+
+
 class KNN_tree:
     def __init__(self, tree, centroid):
         self.tree = tree
@@ -106,11 +122,14 @@ class Forest:
             self.trees.append(KNN_tree(TDIDT_CUT(random_E,self.F,majority_class(random_E),select_feature,self.M),centroid))
 
 
+
+
 if __name__ == '__main__':
     train_tables = load_tables("train.csv")
     test_tables = load_tables("test.csv")
 
     F = create_Features(len(train_tables[0]))
-    forest = Forest(train_tables,F,3,1,0.5)
+    forest = Forest(train_tables,F,3,1,0.5) #TODO: merge train+test csv's
     forest.create_forest()
-    test_table1s = load_tables("test.csv")
+    x=selectK_trees(test_tables[0],forest,2)
+
