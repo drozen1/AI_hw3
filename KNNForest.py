@@ -72,7 +72,7 @@ def prune(T, V):
     return T
 
 
-def split_train_tabels(train_tabels,num=2):
+def split_train_tabels(train_tabels, num=2):
     kf = KFold(num, True, 318965365)
     for train_index, test_index in kf.split(train_tabels):  # loop 5 times
         trainE = []
@@ -84,44 +84,65 @@ def split_train_tabels(train_tabels,num=2):
         return trainE, testE
 
 
-
-def selectK_trees(example,forest, K):
-    selected_KNN_trees=[]
+def selectK_trees(example, forest, K):
+    selected_KNN_trees = []
     example.remove(example[0])
-    all_trees_and_distance=[]
+    all_trees_and_distance = []
     for tree in forest.trees:
-        curr_dist=distance.euclidean(example,tree.centroid)
-        all_trees_and_distance.append([curr_dist,tree])
+        curr_dist = distance.euclidean(example, tree.centroid)
+        all_trees_and_distance.append([curr_dist, tree])
     all_trees_and_distance.sort()
-    for i in range(0,K):
-        selected_KNN_trees.append( all_trees_and_distance[i][1].tree)
+    for i in range(0, K):
+        selected_KNN_trees.append(all_trees_and_distance[i][1].tree)
     return selected_KNN_trees
 
+def decision_ktrees(selected_KNN_trees,example):
+    counterM=0
+    counterB=0
+    for tree in selected_KNN_trees:
+        res= classify(tree,example)
+        if res=='B':
+            counterB+=1
+        else:
+            counterM+=1
+    if(counterM>counterB):  #TODO: >= maybe
+        return 'M'
+    return 'B'
 
+def predict(test_tables,forest,k):
+    sum=len(test_tables)
+    counter_errors=0
+    for test in test_tables:
+        real_result=test[0]
+        selected_KNN_trees=selectK_trees(deepcopy(test),forest,k)
+        result=decision_ktrees(selected_KNN_trees,test)
+        if(result!=real_result):
+            counter_errors+=1
+    return 1-(counter_errors/sum)
 
 class KNN_tree:
     def __init__(self, tree, centroid):
         self.tree = tree
         self.centroid = centroid
 
+
 class Forest:
-    def __init__(self,E,F,number_of_trees,M,p):
+    def __init__(self, E, F, number_of_trees, M, p):
         self.E = E
         self.F = F
         self.number_of_trees = number_of_trees
-        self.M=M
-        self.trees=[]
-        self.p=p
+        self.M = M
+        self.trees = []
+        self.p = p
 
     def create_forest(self):
-        for i in range(0,self.number_of_trees):
+        for i in range(0, self.number_of_trees):
             num_chosenE = self.p * len(self.E)
             random_E = random.sample(self.E, math.floor(num_chosenE))
             without_diag = np.delete(random_E, 0, 1)
-            centroid=(np.mean(without_diag.astype(np.float), axis=0))
-            self.trees.append(KNN_tree(TDIDT_CUT(random_E,self.F,majority_class(random_E),select_feature,self.M),centroid))
-
-
+            centroid = (np.mean(without_diag.astype(np.float), axis=0))
+            self.trees.append(
+                KNN_tree(TDIDT_CUT(random_E, self.F, majority_class(random_E), select_feature, self.M), centroid))
 
 
 if __name__ == '__main__':
@@ -129,7 +150,11 @@ if __name__ == '__main__':
     test_tables = load_tables("test.csv")
 
     F = create_Features(len(train_tables[0]))
-    forest = Forest(train_tables,F,3,1,0.5) #TODO: merge train+test csv's
-    forest.create_forest()
-    x=selectK_trees(test_tables[0],forest,2)
-
+    sum=0
+    for i in range(0,20):
+        forest = Forest(train_tables, F, number_of_trees=3, M=1, p=0.34)  # TODO: merge train+test csv's
+        forest.create_forest()
+        x=(predict(test_tables,forest,k=3))
+        print(x)
+        sum+=x
+    print("total accurici is: ", sum/20)
