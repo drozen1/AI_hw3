@@ -69,7 +69,7 @@ def prune(T, V):
     return T
 
 
-def split_train_tabels(train_tabels,num=2):
+def split_train_tabels(train_tabels, num=2):
     kf = KFold(num, True, 318965365)  # TODO: change to my ID
     for train_index, test_index in kf.split(train_tabels):  # loop 5 times
         trainE = []
@@ -81,29 +81,99 @@ def split_train_tabels(train_tabels,num=2):
         return trainE, testE
 
 
+def Kf_train_tabels(train_tabels, num=2, M=1, ):
+    best_lost = 2
+    best_tree = None
+    kf = KFold(num, True, 318965365)  # TODO: change to my ID
+    for train_index, test_index in kf.split(train_tabels):  # loop 5 times
+        trainE = []
+        testE = []
+        for i in train_index:  # relevant E for train
+            trainE.append(train_tabels[i])
+        for j in test_index:  # relevant E for test
+            testE.append(train_tabels[j])
+        c = majority_class(trainE)
+        F = create_Features(len(trainE[0]))
+        T = TDIDT_CUT(trainE, F, c, select_feature, M)
+        TT = prune(T, testE)
+        basic_classifier = IDT_basic_classifier(None, testE, None, TT)
+        curr_loss = basic_classifier.predict_IDT_loss(False)
+        # print(curr_loss)
+        if (curr_loss < best_lost):
+            best_lost = curr_loss
+            best_tree = TT
+    return best_tree #,best_lost
+
+
 if __name__ == '__main__':
     train_tables = load_tables("train.csv")
     test_tables = load_tables("test.csv")
-
-    V_train, V_test = split_train_tabels(train_tables,4)
-    c = majority_class(V_train)
-    F = create_Features(len(V_train[0]))
-    T = TDIDT_CUT(V_train, F, c, select_feature,3)
+    # date3 = load_tables("data3.csv")
+    # date = load_tables("data.csv")
+    T = Kf_train_tabels(train_tables, 4)
 
     basic_classifier = IDT_basic_classifier(None, test_tables, None, T)
     x = basic_classifier.predict_IDT_loss(False)
-    #print(x)
-    best_tree = prune(T, V_test)
-    basic_classifier1 = IDT_basic_classifier(None, test_tables, None, best_tree)
-    loss = basic_classifier1.predict_IDT_loss(False)
-    print(loss)
+    print(x)
+    # basic_classifier = IDT_basic_classifier(None, date3, None, T)
+    # x = basic_classifier.predict_IDT_loss(False)
+    # print(x)
+    #0.038461538461538464 without prune m=3 k=4
+    # xtest=0
+    # Mtest, Mdata, Mpredicted =0,0,0
+    # xdata3=0
+    # xpredicted = 2
+    # Ktest, Kdata, Kpredicted = 0, 0,0
+    # for M in range(1,6):
+    #     for k in range(2, 6):
+    #         print("M is: ",M, "K is: ",k)
+    #         T,curr_loss = Kf_train_tabels(train_tables, k, M)
+    #         basic_classifier = IDT_basic_classifier(None, test_tables, None, T)
+    #         print("predicted loss is: ",curr_loss)
+    #         if xpredicted>curr_loss:
+    #             Kpredicted=k
+    #             Mpredicted=M
+    #             xpredicted=curr_loss
+    #         x = basic_classifier.predict_IDT_loss(False)
+    #        # print("loss on test is: ",x)
+    #         if xtest>x:
+    #             Ktest=k
+    #             Mtest=M
+    #             xtest=x
+    #         basic_classifier = IDT_basic_classifier(None, date3, None, T)
+    #         x = basic_classifier.predict_IDT_loss(False)
+    #    #     print("loss on data3 is: ",x)  # 0.038461538461538464 without prune m=3 k=4
+    #         if xdata3>x:
+    #             Kdata=k
+    #             Mdata=M
+    #             xdata3=x
+    #
+    # print("for test best vals are: M:", Mtest, "K: ", Ktest, "loss is: ", xtest)
+    # print("for date3 best vals are: M:", Mdata, "K: ", Kdata, "loss is: ", xdata3)
+    # print("for predicted best vals are: M:", Mpredicted, "K: ", Kpredicted, "loss is: ",xpredicted )
+    # best_tree = prune(T, V_test)
+    # basic_classifier1 = IDT_basic_classifier(None, test_tables, None, best_tree)
+    # loss = basic_classifier1.predict_IDT_loss(False)
+    # print(loss)
 
-
+    # train_tables = load_tables("train.csv")
+    # test_tables = load_tables("test.csv")
+    # V_train, V_test = split_train_tabels(train_tables,4)
+    # c = majority_class(V_train)
+    # F = create_Features(len(V_train[0]))
+    # T = TDIDT_CUT(V_train, F, c, select_feature,3)
+    #
+    # basic_classifier = IDT_basic_classifier(None, test_tables, None, T)
+    # x = basic_classifier.predict_IDT_loss(False)
+    # #print(x)
+    # best_tree = prune(T, V_test)
+    # basic_classifier1 = IDT_basic_classifier(None, test_tables, None, best_tree)
+    # loss = basic_classifier1.predict_IDT_loss(False)
+    # print(loss)
 
     """
       ניסיון לכוונן ערכים:
     """
-
 
     # minloss=1
     # minloss_index=-1
@@ -130,11 +200,6 @@ if __name__ == '__main__':
     #
     # print(minloss_index,minloss,min_lossM)
 
-
-
-
-
-
-    #M=2 0.012389380530973451 k=2
-    #M=12 0.001769911504424779 k=3
-    #K=4 0.004424778761061947 no early cut
+    # M=2 0.012389380530973451 k=2
+    # M=12 0.001769911504424779 k=3
+    # K=4 0.004424778761061947 no early cut
